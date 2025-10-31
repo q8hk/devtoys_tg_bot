@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
-from typing import Any
 
-from pydantic import Field, field_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     """Runtime configuration parsed from environment variables."""
 
     bot_token: str = Field(..., alias="BOT_TOKEN")
-    admins: list[int] = Field(default_factory=list, alias="ADMINS")
+    admins: list[int] = Field(default_factory=list, alias="ADMINS_LIST")
     max_file_mb: int = Field(15, alias="MAX_FILE_MB")
     rate_limit_per_user_per_min: int = Field(30, alias="RATE_LIMIT_PER_USER_PER_MIN")
     persist_dir: Path = Field(Path("/data"), alias="PERSIST_DIR")
@@ -23,19 +23,20 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        env_json_loads=lambda value: value,
     )
 
-    @field_validator("admins", mode="before")
-    @classmethod
-    def _parse_admins(cls, value: Any) -> list[int]:
-        if value is None or value == "":
-            return []
-        if isinstance(value, str):
-            parts = [part.strip() for part in value.split(",")]
-            return [int(part) for part in parts if part]
-        if isinstance(value, (list, tuple, set)):
-            return [int(item) for item in value if str(item).strip()]
-        return [int(value)]
+    @model_validator(mode="after")
+    def _populate_admins(self) -> "Settings":
+        if self.admins:
+            return self
+        raw = os.getenv("ADMINS", "")
+        if not raw:
+            self.admins = []
+        else:
+            parts = [part.strip() for part in raw.split(",")]
+            self.admins = [int(part) for part in parts if part]
+        return self
 
 
 def load_settings() -> Settings:
