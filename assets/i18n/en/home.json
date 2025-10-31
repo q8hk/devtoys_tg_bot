@@ -1,0 +1,33 @@
+{
+  "start_title": "<b>DevToys Tools Bot</b>",
+  "start_body": "Welcome! Pick a category below to explore developer utilities.",
+  "tools_title": "Browse tools by category:",
+  "help": "<b>How to use the bot</b>\n\nUse /tools or the home menu to pick a category. Each tool walks you through providing input and returns the processed result. Send /recent at any time to revisit your latest actions.",
+  "about": "<b>About</b>\n\nDevToys Tools Bot brings a curated set of converters, formatters, validators, and generators inspired by the DevToys desktop app. Everything runs securely in the cloud so you can work from any device.",
+  "privacy": "<b>Privacy</b>\n\nInputs are processed transiently and stored only long enough to deliver results. Temporary files are kept in your private workspace and are purged automatically. See /settings for personal preferences.",
+  "recent_intro": "Your latest tasks:",
+  "recent_empty": "You have not run any tasks yet.",
+  "recent_cleared": "Recent history cleared.",
+  "recent_manage": {
+    "clear": "Clear history",
+    "back": "Back to home"
+  },
+  "cancelled": "Okay, I cancelled the current action.",
+  "settings_intro": "Adjust your personal preferences:",
+  "settings_options": {
+    "language": "Change language",
+    "timezone": "Set timezone",
+    "format": "Default output format",
+    "privacy": "Privacy preferences"
+  },
+  "home_sections": {
+    "text_tools": "Text",
+    "data_tools": "Data",
+    "security_tools": "Security",
+    "media_tools": "Media",
+    "web_tools": "Web",
+    "time_tools": "Time",
+    "color_tools": "Color",
+    "admin_panel": "Admin"
+  }
+}
