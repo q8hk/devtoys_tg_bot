@@ -3,85 +3,175 @@
 from __future__ import annotations
 
 import json
+import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
+logger = logging.getLogger(__name__)
+
+
+class I18nError(RuntimeError):
+    """Base error for I18n failures."""
+
+
+class CatalogNotFoundError(I18nError):
+    """Raised when a catalog for a locale is missing."""
+
+
+class MessageNotFoundError(I18nError):
+    """Raised when a message key cannot be located."""
+
+
+@dataclass(slots=True)
+class I18nContext:
+    """Translator bound to a specific locale."""
+
+    i18n: "I18n"
+    locale: str
+
+    def gettext(self, key: str, /, **kwargs: Any) -> str:
+        """Translate a key using the bound locale."""
+
+        return self.i18n.gettext(key, locale=self.locale, **kwargs)
+
+    __call__ = gettext
+
 
 class I18n:
-    """Load JSON-based translation catalogs with graceful fallbacks."""
+    """Loads JSON catalogs and provides translation helpers."""
 
-    def __init__(self, base_path: Path | str | None = None, default_locale: str = "en") -> None:
-        root = Path(__file__).resolve().parents[2]
-        self._base_path = Path(base_path) if base_path else root / "assets" / "i18n"
-        self._default_locale = default_locale
-        self._cache: dict[tuple[str, str], Mapping[str, Any]] = {}
+    def __init__(self, locales_dir: Path, default_locale: str = "en") -> None:
+        self._locales_dir = locales_dir
+        self._default_locale = self._normalize_locale(default_locale)
+        self._catalogs: dict[str, Mapping[str, Any]] = {}
+        self.reload()
 
-    def _normalize_locale(self, locale: str | None) -> str:
-        if not locale:
-            return self._default_locale
-        return locale.replace("_", "-").split("-", maxsplit=1)[0].lower()
+    @property
+    def default_locale(self) -> str:
+        return self._default_locale
 
-    def _load_namespace(self, locale: str, namespace: str) -> Mapping[str, Any]:
-        key = (locale, namespace)
-        if key in self._cache:
-            return self._cache[key]
-        path = self._base_path / locale / f"{namespace}.json"
-        if path.is_file():
-            with path.open(encoding="utf-8") as fp:
-                data = json.load(fp)
-        else:
-            data = {}
-        self._cache[key] = data
-        return data
+    @property
+    def locales_dir(self) -> Path:
+        return self._locales_dir
 
-    def clear_cache(self) -> None:
-        """Clear the in-memory cache of loaded catalogs."""
+    def reload(self) -> None:
+        """Reload catalogs from disk."""
 
-        self._cache.clear()
+        self._catalogs = {}
+        if not self._locales_dir.exists():
+            raise CatalogNotFoundError(
+                f"Locales directory '{self._locales_dir}' does not exist"
+            )
+        for path in sorted(self._locales_dir.glob("*.json")):
+            locale = self._normalize_locale(path.stem)
+            try:
+                with path.open("r", encoding="utf-8") as fp:
+                    data = json.load(fp)
+            except json.JSONDecodeError as exc:
+                raise I18nError(f"Failed to parse locale file '{path}'") from exc
+            if not isinstance(data, Mapping):
+                raise I18nError(
+                    f"Catalog '{path}' must contain an object at the root"
+                )
+            self._catalogs[locale] = data
+        if self._default_locale not in self._catalogs:
+            raise CatalogNotFoundError(
+                f"Default locale '{self._default_locale}' not found in {self._locales_dir}"
+            )
 
-    def translate(
+    def available_locales(self) -> tuple[str, ...]:
+        """Return the loaded locales."""
+
+        return tuple(self._catalogs.keys())
+
+    def resolve_locale(self, locale: str | None) -> str:
+        """Resolve a locale using fallbacks."""
+
+        if locale:
+            normalized = self._normalize_locale(locale)
+            if normalized in self._catalogs:
+                return normalized
+            base = normalized.split("-")[0]
+            if base in self._catalogs:
+                return base
+        return self._default_locale
+
+    def gettext(
         self,
-        namespace: str,
         key: str,
+        /,
         *,
         locale: str | None = None,
-        default: Any | None = None,
-    ) -> Any:
-        """Return the translation for ``key`` in ``namespace``.
+        default: str | None = None,
+        **kwargs: Any,
+    ) -> str:
+        """Translate *key* using *locale* or the default.
 
-        Keys may be dotted paths (``section.subsection.value``). If the key is not
-        found in the requested locale, the method falls back to the default
-        locale. When no translation is available the provided ``default`` value is
-        returned, otherwise the key itself is returned.
+        Nested keys can be accessed with dot-notation (e.g. ``errors.general``).
         """
 
-        normalized_locale = self._normalize_locale(locale)
-        value = self._resolve_value(self._load_namespace(normalized_locale, namespace), key)
-        if value is not None:
-            return value
-        if normalized_locale != self._default_locale:
-            value = self._resolve_value(self._load_namespace(self._default_locale, namespace), key)
-            if value is not None:
-                return value
-        return default if default is not None else key
+        resolved_locale = self.resolve_locale(locale)
+        catalog = self._catalogs.get(resolved_locale)
+        if catalog is None:
+            raise CatalogNotFoundError(
+                f"Locale '{resolved_locale}' is not available. Loaded: {self.available_locales()}"
+            )
+        message = self._lookup(catalog, key)
+        if message is None and resolved_locale != self._default_locale:
+            fallback_catalog = self._catalogs[self._default_locale]
+            message = self._lookup(fallback_catalog, key)
+        if message is None:
+            if default is not None:
+                message = default
+            else:
+                logger.debug("Missing translation", extra={"key": key, "locale": resolved_locale})
+                message = key
+        if kwargs:
+            try:
+                message = message.format(**kwargs)
+            except Exception:  # pragma: no cover - formatting errors are logged then bubbled
+                logger.exception(
+                    "Failed to format translation",
+                    extra={"key": key, "locale": resolved_locale, "kwargs": kwargs},
+                )
+        return message
 
-    def _resolve_value(self, data: Mapping[str, Any], dotted_key: str) -> Any:
-        current: Any = data
-        for part in dotted_key.split('.'):
+    def get_context(self, locale: str | None) -> I18nContext:
+        """Return a context helper bound to *locale*."""
+
+        resolved = self.resolve_locale(locale)
+        return I18nContext(i18n=self, locale=resolved)
+
+    @staticmethod
+    def _normalize_locale(locale: str) -> str:
+        sanitized = locale.replace("_", "-").lower()
+        return sanitized
+
+    @staticmethod
+    def _lookup(catalog: Mapping[str, Any], key: str) -> str | None:
+        parts = key.split(".") if key else []
+        current: Any = catalog
+        for part in parts:
             if isinstance(current, Mapping) and part in current:
                 current = current[part]
             else:
                 return None
-        return current
+        if isinstance(current, str):
+            return current
+        return None
+
+    def __contains__(self, locale: str) -> bool:
+        return self._normalize_locale(locale) in self._catalogs
+
+    def __len__(self) -> int:
+        return len(self._catalogs)
 
 
-_i18n = I18n()
-
-
-def translate(namespace: str, key: str, *, locale: str | None = None, default: Any | None = None) -> Any:
-    """Proxy helper using the module-level ``I18n`` instance."""
-
-    return _i18n.translate(namespace, key, locale=locale, default=default)
-
-
-__all__ = ["I18n", "translate"]
+__all__ = [
+    "I18n",
+    "I18nContext",
+    "I18nError",
+    "CatalogNotFoundError",
+    "MessageNotFoundError",
+]
