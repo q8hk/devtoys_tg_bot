@@ -2,6 +2,8 @@ services:
   bot:
     build: .
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       - BOT_TOKEN=${BOT_TOKEN}
       - ADMINS=${ADMINS}
@@ -9,16 +11,13 @@ services:
       - RATE_LIMIT_PER_USER_PER_MIN=${RATE_LIMIT_PER_USER_PER_MIN:-30}
       - PERSIST_DIR=${PERSIST_DIR:-/data}
       - REDIS_URL=${REDIS_URL:-}
-    env_file:
-      - .env
     volumes:
       - data:/data
-    depends_on:
-      redis:
-        condition: service_healthy
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    profiles: ["redis"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s

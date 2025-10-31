@@ -6,6 +6,16 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=on \
 
 WORKDIR /app
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      build-essential \
+      libjpeg62-turbo-dev \
+      zlib1g-dev \
+      libwebp-dev \
+      libtiff-dev \
+      libopenjp2-7-dev && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY tests ./tests
@@ -22,6 +32,16 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=on \
     PERSIST_DIR=/data
 
 WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      libjpeg62-turbo \
+      zlib1g \
+      libwebp7 \
+      libtiff6 \
+      libopenjp2-7 \
+      tzdata && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/wheels /wheels
 RUN pip install --upgrade pip && \
