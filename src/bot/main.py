@@ -11,6 +11,7 @@ from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
 import structlog
 
+from .commands import setup_bot_commands
 from .config import AppConfig, load_settings
 from .middlewares import LocalizationMiddleware, LoggingMiddleware, RateLimitMiddleware
 from .persistence import PersistenceManager
@@ -91,6 +92,7 @@ async def main(config: AppConfig) -> None:
         cleanup_interval=config.persistence.cleanup_interval,
     )
     await storage.startup()
+    await setup_bot_commands(bot)
     dispatcher = Dispatcher()
     dispatcher["config"] = config
     dispatcher["persistence_manager"] = persistence_manager
