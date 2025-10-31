@@ -18,6 +18,11 @@ HOME_SECTIONS: tuple[tuple[str, str], ...] = (
     ("color_tools", "Color"),
 )
 
+BACK_CALLBACK = "tools:back"
+HOME_CALLBACK = "home:open"
+RUN_AGAIN_CALLBACK = "tools:run_again"
+COPY_CALLBACK = "tools:copy"
+
 
 def build_home_keyboard(
     is_admin: bool,
