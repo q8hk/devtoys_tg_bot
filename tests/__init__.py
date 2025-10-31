@@ -1,4 +1,4 @@
-"""Test package initialization."""
+"""Test suite package configuration."""
 
 from __future__ import annotations
 

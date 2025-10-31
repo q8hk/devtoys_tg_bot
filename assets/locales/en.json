@@ -1,0 +1,6 @@
+{
+  "errors": {
+    "internal": "Sorry, something went wrong. Please try again later.",
+    "rate_limited": "Too many requests. Please wait {retry_after} seconds before trying again."
+  }
+}
