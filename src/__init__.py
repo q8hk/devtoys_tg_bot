@@ -1,1 +1,7 @@
-"""Top-level package for bot source code."""
+"""Top level package for the DevToys Telegram bot project."""
+
+from __future__ import annotations
+
+__all__ = ["__version__"]
+
+__version__ = "0.1.0"
