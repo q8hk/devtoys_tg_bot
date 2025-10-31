@@ -32,7 +32,10 @@ async def main() -> None:
     dispatcher = Dispatcher()
     # TODO: Wire middlewares, routers, background tasks, and storage.
     logger.info("Bot initialized", extra={"admins": settings.admins})
-    await bot.session.close()
+    try:
+        await dispatcher.start_polling(bot)
+    finally:
+        await bot.session.close()
 
 
 if __name__ == "__main__":
