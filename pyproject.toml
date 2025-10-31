@@ -30,11 +30,12 @@ dependencies = [
     "pillow>=10.0",
     "qrcode[pil]>=7.4",
     "python-dateutil>=2.8",
-    "pendulum>=3.0",
+    "dateparser>=1.2",
     "regex>=2023.12",
     "httpx>=0.25",
     "aiofiles>=23.0",
-    "uvloop>=0.19; platform_system != \"Windows\""
+    "uvloop>=0.19; platform_system != \"Windows\"",
+    "cryptography>=42.0",
 ]
 
 [project.optional-dependencies]

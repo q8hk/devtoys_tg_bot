@@ -2,35 +2,45 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from importlib import import_module
 
-if TYPE_CHECKING:  # pragma: no cover - imported for type hints only
-    from aiogram import Dispatcher
-    from ...storage import StorageManager
+from aiogram import Router
 
 
-@dataclass(slots=True)
-class ToolContext:
-    """Shared dependencies for tool handlers."""
-
-    storage: "StorageManager"
-
-
-def attach_tool_context(dispatcher: "Dispatcher", storage: "StorageManager") -> None:
-    """Bind the tool context to the dispatcher for easy access by routers."""
-
-    dispatcher.workflow_data["tool_context"] = ToolContext(storage=storage)
-
-
-def get_tool_context(dispatcher: "Dispatcher") -> ToolContext:
-    """Retrieve the shared tool context from the dispatcher."""
-
-    context = dispatcher.workflow_data.get("tool_context")
-    if context is None:
-        msg = "Tool context has not been initialised"
-        raise RuntimeError(msg)
-    return context
+_MODULES: tuple[str, ...] = (
+    "base64_codec",
+    "code_tools",
+    "color_tools",
+    "csv_tsv",
+    "hash_tools",
+    "html_tools",
+    "image_tools",
+    "json_yaml",
+    "jwt_tools",
+    "qr_tools",
+    "regex_tools",
+    "text_tools",
+    "time_tools",
+    "url_codec",
+    "uuid_ulid",
+    "xml_tools",
+)
 
 
-__all__ = ["ToolContext", "attach_tool_context", "get_tool_context"]
+def _load_router(module_name: str) -> Router:
+    module = import_module(f"{__name__}.{module_name}")
+    router = getattr(module, "router", None)
+    if isinstance(router, Router):
+        return router
+    router = Router(name=f"tools.{module_name}")
+    setattr(module, "router", router)
+    return router
+
+
+def tool_routers() -> tuple[Router, ...]:
+    """Return tool routers to be included in the dispatcher."""
+
+    return tuple(_load_router(module_name) for module_name in _MODULES)
+
+
+__all__ = ["tool_routers"]
