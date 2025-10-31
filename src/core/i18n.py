@@ -1,4 +1,4 @@
-"""Internationalization helpers."""
+"""Internationalization helpers for loading localized resources."""
 
 from __future__ import annotations
 
