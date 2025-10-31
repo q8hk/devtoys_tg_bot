@@ -1,7 +1,4 @@
-import os
-
 import pytest
-
 from src.bot import config, keyboards
 
 

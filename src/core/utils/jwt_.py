@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import base64
-import json
-import hmac
 import hashlib
+import hmac
+import json
 from dataclasses import dataclass
 from typing import Any
 
@@ -21,7 +21,7 @@ class JWTDecodeError(ValueError):
 
 
 def _b64url_decode(segment: str) -> bytes:
-    padding = '=' * (-len(segment) % 4)
+    padding = "=" * (-len(segment) % 4)
     return base64.urlsafe_b64decode(segment + padding)
 
 

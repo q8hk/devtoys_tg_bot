@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
-from urllib.parse import ParseResult, parse_qsl, urlencode, urlparse, urlunparse, quote, unquote
+from urllib.parse import ParseResult, parse_qsl, quote, unquote, urlencode, urlparse, urlunparse
 
 __all__ = [
     "ParsedUrl",
@@ -29,7 +29,7 @@ class ParsedUrl:
     fragment: str
 
     @classmethod
-    def from_parse_result(cls, result: ParseResult) -> "ParsedUrl":
+    def from_parse_result(cls, result: ParseResult) -> ParsedUrl:
         return cls(
             scheme=result.scheme,
             netloc=result.netloc,
@@ -40,7 +40,14 @@ class ParsedUrl:
         )
 
     def to_parse_result(self) -> ParseResult:
-        return ParseResult(self.scheme, self.netloc, self.path, self.params, self.query, self.fragment)
+        return ParseResult(
+            self.scheme,
+            self.netloc,
+            self.path,
+            self.params,
+            self.query,
+            self.fragment,
+        )
 
 
 def parse_url(value: str) -> ParsedUrl:
@@ -98,7 +105,7 @@ def rebuild_query_string(data: dict[str, Any]) -> str:
 
     encoded: list[tuple[str, str]] = []
     for key, value in data.items():
-        if isinstance(value, (list, tuple)):
+        if isinstance(value, list | tuple):
             encoded.extend((key, str(item)) for item in value)
         else:
             encoded.append((key, str(value)))

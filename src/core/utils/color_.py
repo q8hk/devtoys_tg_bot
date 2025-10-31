@@ -38,15 +38,19 @@ def rgb_to_hsl(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
     """Convert an RGB tuple to HSL components."""
 
     r, g, b = (channel / 255 for channel in rgb)
-    h, l, s = rgb_to_hls(r, g, b)
-    return (round(h * 360), round(s * 100), round(l * 100))
+    hue, lightness, saturation = rgb_to_hls(r, g, b)
+    return (
+        round(hue * 360),
+        round(saturation * 100),
+        round(lightness * 100),
+    )
 
 
 def hsl_to_rgb(hsl: tuple[int, int, int]) -> tuple[int, int, int]:
     """Convert an HSL triple back to RGB."""
 
-    h, s, l = hsl
-    r, g, b = hls_to_rgb(h / 360, l / 100, s / 100)
+    hue, saturation, lightness = hsl
+    r, g, b = hls_to_rgb(hue / 360, lightness / 100, saturation / 100)
     return (round(r * 255), round(g * 255), round(b * 255))
 
 

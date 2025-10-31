@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     )
 
     @model_validator(mode="after")
-    def _populate_admins(self) -> "Settings":
+    def _populate_admins(self) -> Settings:
         if self.admins:
             return self
         raw = os.getenv("ADMINS", "")

@@ -63,5 +63,5 @@ def inspect_ulid(value: str) -> ULIDInfo:
     """Return metadata for the supplied ULID string."""
 
     parsed = ulid.ULID.from_str(value)
-    timestamp = _dt.datetime.fromtimestamp(parsed.timestamp, tz=_dt.timezone.utc)
+    timestamp = _dt.datetime.fromtimestamp(parsed.timestamp, tz=_dt.UTC)
     return ULIDInfo(value=parsed, timestamp=timestamp)

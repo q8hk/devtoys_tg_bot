@@ -1,7 +1,6 @@
 import json
 
 import pytest
-
 from src.core.utils import json_yaml
 
 

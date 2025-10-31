@@ -1,6 +1,7 @@
-"""Shared error types for the bot."""
-
 from __future__ import annotations
+
+# Shared error types for the bot.
+
 
 class BotError(Exception):
     """Base exception for known bot errors."""

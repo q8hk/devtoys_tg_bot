@@ -27,7 +27,13 @@ def generate_password(
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
-def text_diff(original: str, updated: str, *, fromfile: str = "original", tofile: str = "updated") -> str:
+def text_diff(
+    original: str,
+    updated: str,
+    *,
+    fromfile: str = "original",
+    tofile: str = "updated",
+) -> str:
     """Return a unified diff between two pieces of text."""
 
     diff = unified_diff(

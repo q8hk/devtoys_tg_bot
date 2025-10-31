@@ -53,7 +53,12 @@ def convert_delimiter(value: str, *, source: str | None = None, target: str = ",
     return output.getvalue().strip("\n")
 
 
-def to_json_rows(value: str, *, delimiter: str | None = None, headers: list[str] | None = None) -> list[dict[str, Any]]:
+def to_json_rows(
+    value: str,
+    *,
+    delimiter: str | None = None,
+    headers: list[str] | None = None,
+) -> list[dict[str, Any]]:
     """Return a list of dictionaries representing rows."""
 
     delimiter = delimiter or sniff_dialect(value).delimiter

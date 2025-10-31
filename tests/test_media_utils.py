@@ -1,7 +1,6 @@
 import io
 
 from PIL import Image
-
 from src.core.utils import color_, image_, qr_
 
 

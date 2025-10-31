@@ -7,11 +7,11 @@ logic easy to test without having to go through aiogram handlers.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from random import Random
 from textwrap import dedent as _dedent
 from textwrap import indent as _indent
-from typing import Iterable
 
 __all__ = [
     "trim",
@@ -145,7 +145,9 @@ def add_line_numbers(value: str, *, start: int = 1, padding: int = 3, separator:
     """
 
     lines = _split_lines(value)
-    formatted = [f"{index:0{padding}d}{separator}{line}" for index, line in enumerate(lines, start=start)]
+    formatted = [
+        f"{index:0{padding}d}{separator}{line}" for index, line in enumerate(lines, start=start)
+    ]
     return "\n".join(formatted)
 
 

@@ -1,14 +1,14 @@
+import base64
 import datetime as dt
+import hashlib
+import hmac
 
 from src.core.utils import jwt_, regex_, time_, uuid_ulid
 
 
 def create_sample_jwt(secret: str) -> str:
-    header = "{\"alg\":\"HS256\"}"
-    payload = "{\"sub\":\"123\",\"name\":\"Alice\"}"
-    import base64
-    import hmac
-    import hashlib
+    header = '{"alg":"HS256"}'
+    payload = '{"sub":"123","name":"Alice"}'
 
     def encode(segment: str) -> str:
         data = segment.encode()
@@ -46,7 +46,7 @@ def test_uuid_and_ulid_helpers():
 
 
 def test_time_conversions():
-    now = dt.datetime.now(tz=dt.timezone.utc)
+    now = dt.datetime.now(tz=dt.UTC)
     epoch = time_.datetime_to_epoch(now)
     restored = time_.epoch_to_datetime(epoch, tz="UTC")
     assert restored.tzinfo is not None

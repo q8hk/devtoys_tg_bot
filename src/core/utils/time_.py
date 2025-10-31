@@ -35,7 +35,7 @@ def datetime_to_epoch(dt: _dt.datetime) -> float:
     """Return the epoch for ``dt``."""
 
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=_dt.timezone.utc)
+        dt = dt.replace(tzinfo=_dt.UTC)
     return dt.timestamp()
 
 
@@ -60,7 +60,10 @@ def parse_natural_delta(value: str) -> ParsedDuration:
     try:
         parsed = pendulum.parse(text, strict=False)
     except pendulum.parsing.exceptions.ParserError:
-        pattern = re.compile(r"(?:in\s+)?([+-]?\d+(?:\.\d+)?)\s*(second|minute|hour|day|week|month|year)s?", re.I)
+        pattern = re.compile(
+            r"(?:in\s+)?([+-]?\d+(?:\.\d+)?)\s*(second|minute|hour|day|week|month|year)s?",
+            re.I,
+        )
         match = pattern.fullmatch(text)
         if not match:
             raise ValueError(f"Unsupported duration expression: {value}") from None

@@ -18,7 +18,7 @@ def test_xml_pretty_minify_and_json():
     assert "\n" in pretty
     assert xml_.minify_xml(pretty) == xml_.minify_xml(xml_text)
     json_repr = xml_.xml_to_json(xml_text)
-    assert "\"@attributes\"" in json_repr
+    assert '"@attributes"' in json_repr
 
 
 def test_html_helpers():
