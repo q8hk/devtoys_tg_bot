@@ -12,6 +12,7 @@ from aiogram.types import CallbackQuery, Message
 
 from ..config import load_settings
 from ..keyboards import build_home_keyboard, build_recent_keyboard, build_settings_keyboard
+from ..commands import section_commands
 from ..services.history import RecentHistoryStorage
 from core.i18n import I18n
 
@@ -21,30 +22,32 @@ _settings = load_settings()
 _history_storage = RecentHistoryStorage(_settings.persist_dir / "history", _settings.redis_url)
 _i18n = I18n()
 
-_SECTION_GUIDES: Mapping[str, str] = {
-    "text_tools": (
-        "Text helpers:\n"
-        "- /text_tools to list available commands\n"
-        "- /text_trim <text> to trim whitespace\n"
-        "- /lorem <words> [seed] for lorem ipsum"
-    ),
-    "data_tools": "Data utilities are coming soon. Try /json_pretty or /json_yaml when available.",
-    "security_tools": (
-        "Security helpers:\n"
-        "- /hash_sha256 <text>\n"
-        "- /base64_encode <text>\n"
-        "- /jwt_decode <token>"
-    ),
-    "media_tools": "Media tools will guide you through image, QR, and file conversions (coming soon).",
-    "web_tools": (
-        "Web utilities:\n"
-        "- /urlencode <text>\n"
-        "- /urldecode <text>\n"
-        "- /urlparse <query or url>"
-    ),
-    "time_tools": "Time helpers: try /epoch_to_human <epoch> or /time_now for quick conversions.",
-    "color_tools": "Color utilities coming soon. You'll be able to convert HEX, RGB, and more.",
+_SECTION_NOTES: Mapping[str, str] = {
+    "text_tools": "Use /text_tools to see every text transformer.",
+    "data_tools": "Reply to a message with table or XML data to process it in place.",
+    "media_tools": "Attach or reply with an image when using these commands.",
+    "web_tools": "Commands accept inline text or work when replying to messages.",
 }
+
+
+def _render_section_guide(section: str, label: str, *, locale: str | None) -> str:
+    commands = section_commands(section, for_guide=True)
+    if not commands:
+        return _i18n.translate(
+            "home",
+            "section_coming_soon",
+            locale=locale,
+            default="Content for this section is coming soon.",
+        )
+
+    lines = [f"{label} tools:"]
+    for spec in commands:
+        lines.append(f"- /{spec.name} - {spec.description}")
+
+    note = _SECTION_NOTES.get(section)
+    if note:
+        lines.append(note)
+    return "\n".join(lines)
 
 
 def _is_admin(user_id: int | None) -> bool:
@@ -224,16 +227,7 @@ async def callback_home_section(callback: CallbackQuery) -> None:
         return
     sections = _get_section_labels(locale)
     label = sections.get(section, section.replace("_", " ").title())
-    guide = _SECTION_GUIDES.get(section)
-    if guide is None:
-        guide = _i18n.translate(
-            "home",
-            "section_coming_soon",
-            locale=locale,
-            default="Content for this section is coming soon.",
-        )
-    else:
-        guide = guide.replace("{label}", label)
+    guide = _render_section_guide(section, label, locale=locale)
     text = f"<b>{escape(label)}</b>\n\n{escape(guide)}"
     if callback.message:
         await callback.message.edit_text(text, disable_web_page_preview=True)
