@@ -1,3 +1,1 @@
-"""Application package root."""
-
-from __future__ import annotations
+"""Top-level package for bot source code."""
