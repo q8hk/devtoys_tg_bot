@@ -1,0 +1,32 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - ADMINS=${ADMINS}
+      - MAX_FILE_MB=${MAX_FILE_MB:-15}
+      - RATE_LIMIT_PER_USER_PER_MIN=${RATE_LIMIT_PER_USER_PER_MIN:-30}
+      - PERSIST_DIR=${PERSIST_DIR:-/data}
+      - REDIS_URL=${REDIS_URL:-}
+    env_file:
+      - .env
+    volumes:
+      - data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redis-data:/data
+
+volumes:
+  data:
+  redis-data:

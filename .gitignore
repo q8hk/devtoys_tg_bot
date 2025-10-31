@@ -1,0 +1,38 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Environments
+.env
+.env.*
+.venv/
+venv/
+
+# Tool caches
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# IDE and OS files
+.idea/
+.vscode/
+*.code-workspace
+Thumbs.db
+.DS_Store
