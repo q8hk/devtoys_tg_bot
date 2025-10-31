@@ -7,6 +7,7 @@ import logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
+from aiogram.client.bot import DefaultBotProperties
 
 from .config import load_settings
 
@@ -24,7 +25,10 @@ def configure_logging() -> None:
 async def main() -> None:
     """Bootstrap application layers and start polling."""
     settings = load_settings()
-    bot = Bot(token=settings.bot_token, parse_mode=ParseMode.HTML)
+    bot = Bot(
+        token=settings.bot_token,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+    )
     dispatcher = Dispatcher()
     # TODO: Wire middlewares, routers, background tasks, and storage.
     logger.info("Bot initialized", extra={"admins": settings.admins})
