@@ -3,60 +3,142 @@
 from __future__ import annotations
 
 import asyncio
-from collections import deque
+import logging
+import math
+import time
+from collections import defaultdict, deque
 from dataclasses import dataclass
-from time import monotonic
-from typing import Deque, Dict
+from typing import Protocol
 
+try:  # pragma: no cover - optional dependency guard
+    from redis.asyncio import Redis
+except Exception:  # pragma: no cover - redis might be unavailable at runtime
+    Redis = None  # type: ignore[assignment]
 
-class RateLimitExceededError(RuntimeError):
-    """Error raised when a user exceeds the configured rate limit."""
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
-class RateLimiter:
-    """In-memory, per-user rate limiter.
+class RateLimitStatus:
+    """Represents the outcome of a rate limit check."""
 
-    The limiter keeps track of timestamps for each user in the last minute. It is intentionally
-    lightweight so it can be swapped with a Redis-backed implementation without changing the
-    call sites.
-    """
+    allowed: bool
+    remaining: int
+    retry_after: int
+    limit: int
 
-    limit_per_minute: int
-    _timestamps: Dict[int, Deque[float]] = None  # type: ignore[assignment]
-    _lock: asyncio.Lock = None  # type: ignore[assignment]
 
-    def __post_init__(self) -> None:
-        if self.limit_per_minute < 1:
-            msg = "Rate limit must be at least 1 request per minute"
-            raise ValueError(msg)
-        self._timestamps = {}
+class RateLimitExceeded(RuntimeError):
+    """Raised when a rate limit is exceeded."""
+
+    def __init__(self, status: RateLimitStatus) -> None:
+        self.status = status
+        super().__init__(f"Rate limit exceeded. Retry in {status.retry_after} seconds")
+
+
+class RateLimiter(Protocol):
+    """Protocol implemented by rate limiter backends."""
+
+    async def hit(self, key: str, limit: int, window: int) -> RateLimitStatus:
+        """Register a hit and return the rate limit status."""
+
+
+class MemoryRateLimiter:
+    """A simple in-memory sliding window rate limiter."""
+
+    def __init__(self) -> None:
+        self._hits: defaultdict[str, deque[float]] = defaultdict(deque)
         self._lock = asyncio.Lock()
 
-    async def check(self, user_id: int) -> None:
-        """Ensure the user is within the allowed rate."""
-
+    async def hit(self, key: str, limit: int, window: int) -> RateLimitStatus:
+        now = time.monotonic()
+        threshold = now - window
         async with self._lock:
-            now = monotonic()
-            window = self._timestamps.setdefault(user_id, deque())
-            self._prune(window, now)
-            if len(window) >= self.limit_per_minute:
-                raise RateLimitExceededError(f"Rate limit exceeded for user {user_id}")
-            window.append(now)
+            bucket = self._hits[key]
+            while bucket and bucket[0] <= threshold:
+                bucket.popleft()
+            if len(bucket) >= limit:
+                retry_after = max(math.ceil(window - (now - bucket[0])), 1)
+                status = RateLimitStatus(
+                    allowed=False,
+                    remaining=0,
+                    retry_after=retry_after,
+                    limit=limit,
+                )
+                logger.debug("Rate limit exceeded (memory)", extra={"key": key, "status": status})
+                return status
+            bucket.append(now)
+            remaining = max(limit - len(bucket), 0)
+            status = RateLimitStatus(
+                allowed=True,
+                remaining=remaining,
+                retry_after=0,
+                limit=limit,
+            )
+            logger.debug("Rate limit allowed (memory)", extra={"key": key, "status": status})
+            return status
 
-    def remaining(self, user_id: int) -> int:
-        """Return remaining requests for the user in the current minute."""
 
-        now = monotonic()
-        window = self._timestamps.get(user_id)
-        if window is None:
-            return self.limit_per_minute
-        self._prune(window, now)
-        return max(self.limit_per_minute - len(window), 0)
+class RedisRateLimiter:
+    """Redis-based rate limiter using discrete time windows."""
 
-    def _prune(self, window: Deque[float], now: float) -> None:
-        """Remove entries older than 60 seconds from ``window``."""
+    def __init__(self, redis: Redis, *, prefix: str = "rate-limit") -> None:
+        if Redis is None:
+            raise RuntimeError("redis package is required for RedisRateLimiter")
+        self._redis = redis
+        self._prefix = prefix
 
-        cutoff = now - 60
-        while window and window[0] < cutoff:
-            window.popleft()
+    def _key(self, key: str, window: int) -> str:
+        window_bucket = int(time.time() // window)
+        return f"{self._prefix}:{key}:{window_bucket}"
+
+    async def hit(self, key: str, limit: int, window: int) -> RateLimitStatus:
+        redis_key = self._key(key, window)
+        current = await self._redis.incr(redis_key)
+        if current == 1:
+            await self._redis.expire(redis_key, window)
+        if current > limit:
+            ttl = await self._redis.ttl(redis_key)
+            retry_after = max(int(ttl), 1) if ttl > 0 else window
+            status = RateLimitStatus(
+                allowed=False,
+                remaining=0,
+                retry_after=retry_after,
+                limit=limit,
+            )
+            logger.debug("Rate limit exceeded (redis)", extra={"key": key, "status": status})
+            return status
+        ttl = await self._redis.ttl(redis_key)
+        remaining = max(limit - int(current), 0)
+        status = RateLimitStatus(
+            allowed=True,
+            remaining=remaining,
+            retry_after=int(ttl) if ttl > 0 else 0,
+            limit=limit,
+        )
+        logger.debug("Rate limit allowed (redis)", extra={"key": key, "status": status})
+        return status
+
+
+def create_rate_limiter(redis_url: str | None) -> RateLimiter:
+    """Create a rate limiter using Redis if available, otherwise memory."""
+
+    if redis_url:
+        if Redis is None:
+            logger.warning("redis package missing, falling back to memory rate limiter")
+        else:
+            redis = Redis.from_url(redis_url, encoding="utf-8", decode_responses=False)
+            logger.info("Using Redis rate limiter", extra={"redis_url": redis_url})
+            return RedisRateLimiter(redis)
+    logger.info("Using in-memory rate limiter")
+    return MemoryRateLimiter()
+
+
+__all__ = [
+    "RateLimitStatus",
+    "RateLimitExceeded",
+    "RateLimiter",
+    "MemoryRateLimiter",
+    "RedisRateLimiter",
+    "create_rate_limiter",
+]

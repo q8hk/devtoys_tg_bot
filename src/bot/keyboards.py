@@ -1,13 +1,14 @@
-"""Inline keyboard builders for the bot."""
+"""Inline keyboard builders for frequently used menus."""
 
 from __future__ import annotations
 
-from typing import Iterable, Sequence
+from textwrap import shorten
+from typing import Mapping, Sequence
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
-HOME_SECTIONS: Sequence[tuple[str, str]] = (
+HOME_SECTIONS: tuple[tuple[str, str], ...] = (
     ("text_tools", "Text"),
     ("data_tools", "Data"),
     ("security_tools", "Security"),
@@ -23,66 +24,68 @@ RUN_AGAIN_CALLBACK = "tools:run_again"
 COPY_CALLBACK = "tools:copy"
 
 
-def build_home_keyboard(is_admin: bool) -> InlineKeyboardMarkup:
-    """Return a simple home keyboard grouping tool categories."""
-    buttons = [[InlineKeyboardButton(text=label, callback_data=callback)] for callback, label in HOME_SECTIONS]
-    if is_admin:
-        buttons.append([InlineKeyboardButton(text="Admin", callback_data="admin_panel")])
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
-
-
-def build_back_button(callback_data: str = BACK_CALLBACK) -> InlineKeyboardButton:
-    """Create a shared "Back" button used across tool flows."""
-
-    return InlineKeyboardButton(text="⬅️ Back", callback_data=callback_data)
-
-
-def build_home_button(callback_data: str = HOME_CALLBACK) -> InlineKeyboardButton:
-    """Create a shared "Home" button used across tool flows."""
-
-    return InlineKeyboardButton(text="🏠 Home", callback_data=callback_data)
-
-
-def build_run_again_button(callback_data: str = RUN_AGAIN_CALLBACK) -> InlineKeyboardButton:
-    """Create a shared "Run again" button used after tool completion."""
-
-    return InlineKeyboardButton(text="🔁 Run again", callback_data=callback_data)
-
-
-def build_copy_button(callback_data: str = COPY_CALLBACK) -> InlineKeyboardButton:
-    """Create a shared "Copy" button used to resurface the latest result."""
-
-    return InlineKeyboardButton(text="📋 Copy", callback_data=callback_data)
-
-
-def build_tool_footer_keyboard(
+def build_home_keyboard(
+    is_admin: bool,
+    section_labels: Mapping[str, str] | None = None,
     *,
-    back_callback: str = BACK_CALLBACK,
-    home_callback: str = HOME_CALLBACK,
-    run_again_callback: str | None = RUN_AGAIN_CALLBACK,
-    copy_callback: str | None = COPY_CALLBACK,
-    extra_rows: Iterable[Sequence[InlineKeyboardButton]] | None = None,
+    admin_label: str | None = None,
 ) -> InlineKeyboardMarkup:
-    """Build the shared footer keyboard for tool responses.
+    """Build the home menu keyboard grouping tools by category."""
 
-    The keyboard always contains a first row with "Back" and "Home" buttons. Optional
-    "Run again" and "Copy" buttons share the second row when callbacks are provided.
-    Additional rows can be appended through ``extra_rows`` for tool-specific actions.
-    """
-
-    first_row = [build_back_button(back_callback), build_home_button(home_callback)]
-    rows: list[list[InlineKeyboardButton]] = [first_row]
-
-    optional_row: list[InlineKeyboardButton] = []
-    if run_again_callback:
-        optional_row.append(build_run_again_button(run_again_callback))
-    if copy_callback:
-        optional_row.append(build_copy_button(copy_callback))
-    if optional_row:
-        rows.append(optional_row)
-
-    if extra_rows:
-        for row in extra_rows:
-            rows.append(list(row))
-
+    provided_labels = section_labels or {}
+    rows: list[list[InlineKeyboardButton]] = []
+    for slug, fallback in HOME_SECTIONS:
+        label = provided_labels.get(slug, fallback)
+        rows.append([InlineKeyboardButton(text=label, callback_data=f"home:{slug}")])
+    if is_admin:
+        rows.append([
+            InlineKeyboardButton(
+                text=admin_label or provided_labels.get("admin_panel", "Admin"),
+                callback_data="admin_panel",
+            )
+        ])
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def build_recent_keyboard(
+    recent_tasks: Sequence[str],
+    *,
+    clear_label: str,
+    back_label: str,
+    back_callback: str = "home",
+) -> InlineKeyboardMarkup:
+    """Return an inline keyboard for navigating recent tasks."""
+
+    rows: list[list[InlineKeyboardButton]] = []
+    for index, item in enumerate(recent_tasks, start=1):
+        text = shorten(item, width=46, placeholder="…")
+        rows.append([
+            InlineKeyboardButton(text=f"{index}. {text}", callback_data=f"recent:{index - 1}")
+        ])
+    if recent_tasks:
+        rows.append([InlineKeyboardButton(text=clear_label, callback_data="recent:clear")])
+    rows.append([InlineKeyboardButton(text=back_label, callback_data=back_callback)])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def build_settings_keyboard(
+    options: Sequence[tuple[str, str]],
+    *,
+    back_label: str,
+    back_callback: str = "home",
+) -> InlineKeyboardMarkup:
+    """Return an inline keyboard listing configurable settings options."""
+
+    rows: list[list[InlineKeyboardButton]] = [
+        [InlineKeyboardButton(text=label, callback_data=callback)] for callback, label in options
+    ]
+    rows.append([InlineKeyboardButton(text=back_label, callback_data=back_callback)])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+__all__ = [
+    "HOME_SECTIONS",
+    "build_home_keyboard",
+    "build_recent_keyboard",
+    "build_settings_keyboard",
+]
