@@ -84,6 +84,8 @@ async def main(config: AppConfig) -> None:
         token=config.bot.token,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
+    storage = StorageManager(settings.persist_dir)
+    await storage.startup()
     dispatcher = Dispatcher()
     dispatcher["config"] = config
     dispatcher["persistence_manager"] = persistence_manager
