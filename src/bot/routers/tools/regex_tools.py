@@ -9,7 +9,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from src.core.utils.regex_ import RegexResult, parse_flag_tokens, run_regex
+from core.utils.regex_ import RegexResult, parse_flag_tokens, run_regex
 
 router = Router(name="regex-tools")
 
@@ -109,13 +109,13 @@ def _parse_argument_block(arguments: str) -> RegexCommand:
 
 def _format_regex_result(result: RegexResult) -> str:
     if result.timed_out and not result.matches:
-        header = "⚠️ <b>Regex execution timed out before any matches were found.</b>"
+        header = "!  <b>Regex execution timed out before any matches were found.</b>"
     elif result.timed_out:
-        header = "⚠️ <b>Regex execution timed out. Partial matches:</b>"
+        header = "!  <b>Regex execution timed out. Partial matches:</b>"
     elif not result.matches:
-        header = "ℹ️ <b>No matches found.</b>"
+        header = "info <b>No matches found.</b>"
     else:
-        header = f"✅ <b>Found {len(result.matches)} match(es).</b>"
+        header = f"check <b>Found {len(result.matches)} match(es).</b>"
 
     lines = [header]
     indent = "&nbsp;&nbsp;"
@@ -126,11 +126,11 @@ def _format_regex_result(result: RegexResult) -> str:
         )
         if match.groups:
             for group_index, value in enumerate(match.groups, start=1):
-                display = escape(value) if value is not None else "∅"
+                display = escape(value) if value is not None else "empty"
                 lines.append(f"{indent}Group {group_index}: <code>{display}</code>")
         if match.named_groups:
             for name, value in match.named_groups.items():
-                display = escape(value) if value is not None else "∅"
+                display = escape(value) if value is not None else "empty"
                 lines.append(f"{indent}{escape(name)}: <code>{display}</code>")
 
     return "\n".join(lines)
@@ -152,7 +152,7 @@ async def handle_regex_command(message: Message) -> None:
     try:
         command = _parse_argument_block(arguments)
     except ValueError as exc:
-        await message.reply(f"⚠️ {escape(str(exc))}\n\n{USAGE_MESSAGE}")
+        await message.reply(f"!  {escape(str(exc))}\n\n{USAGE_MESSAGE}")
         return
 
     try:
@@ -164,7 +164,8 @@ async def handle_regex_command(message: Message) -> None:
             timeout=command.timeout,
         )
     except ValueError as exc:
-        await message.reply(f"⚠️ Regex error: {escape(str(exc))}")
+        await message.reply(f"!  Regex error: {escape(str(exc))}")
         return
 
     await message.reply(_format_regex_result(result))
+

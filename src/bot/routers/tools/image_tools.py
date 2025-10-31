@@ -14,7 +14,7 @@ from aiogram.filters import Command
 from aiogram.types import BufferedInputFile, Message
 from aiogram.filters.command import CommandObject
 
-from src.core.utils.image_ import (
+from core.utils.image_ import (
     ImageProcessingError,
     ImageTooLargeError,
     base64_to_image,
@@ -288,10 +288,11 @@ async def handle_image_from_base64(message: Message, command: CommandObject) -> 
 async def handle_image_tools_menu(message: Message) -> None:
     await message.answer(
         "<b>Image tools</b>\n"
-        "• Reply with /image_info to inspect metadata\n"
-        "• Reply with /image_convert &lt;format&gt; to change format\n"
-        "• Reply with /image_resize &lt;width&gt;x&lt;height&gt; or &lt;percent&gt;%\n"
-        "• Reply with /image_compress &lt;quality&gt; to reduce size\n"
-        "• Reply with /image_base64 to get encoded data\n"
-        "• Use /image_from_base64 &lt;data&gt; to decode back into an image"
+        "- Reply with /image_info to inspect metadata\n"
+        "- Reply with /image_convert &lt;format&gt; to change format\n"
+        "- Reply with /image_resize &lt;width&gt;x&lt;height&gt; or &lt;percent&gt;%\n"
+        "- Reply with /image_compress &lt;quality&gt; to reduce size\n"
+        "- Reply with /image_base64 to get encoded data\n"
+        "- Use /image_from_base64 &lt;data&gt; to decode back into an image"
     )
+

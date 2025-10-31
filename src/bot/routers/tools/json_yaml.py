@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from src.core.utils.json_yaml import (
+from core.utils.json_yaml import (
     AutoDetectResult,
     DiffSummary,
     ValidationResult,
@@ -96,3 +96,4 @@ def diff_payloads(left: str, right: str) -> tuple[DiffSummary, AutoDetectResult,
 
     summary = summarize_diff(left_detection.data, right_detection.data)
     return summary, left_detection, right_detection
+

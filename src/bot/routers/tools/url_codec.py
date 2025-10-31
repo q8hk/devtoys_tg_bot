@@ -13,8 +13,8 @@ from aiogram import Router
 from aiogram.filters import Command, CommandObject
 from aiogram.types import Message
 
-from ....core.errors import ToolValidationError
-from ....core.utils import url
+from core.errors import ToolValidationError
+from core.utils import url
 
 router = Router(name="tools-url-codec")
 
@@ -31,7 +31,7 @@ PERCENT_PATTERN = re.compile(r"%[0-9A-Fa-f]{2}")
 
 
 def _format_section(title: str, content: str) -> str:
-    formatted = content if content else "∅"
+    formatted = content if content else "empty"
     return f"<b>{escape(title)}</b>\n<pre>{escape(formatted)}</pre>"
 
 
@@ -136,7 +136,7 @@ async def _answer(message: Message, response: str) -> None:
 
 
 async def _answer_error(message: Message, error: Exception) -> None:
-    await message.answer(f"⚠️ <b>{escape(str(error))}</b>")
+    await message.answer(f"!  <b>{escape(str(error))}</b>")
 
 
 @router.message(Command("urlencode"))
@@ -191,3 +191,6 @@ async def url_auto_handler(message: Message, command: CommandObject) -> None:
         return
     annotated = f"{response}\n\n<i>{escape(footer)}</i>"
     await _answer(message, annotated)
+
+
+

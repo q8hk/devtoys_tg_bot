@@ -66,17 +66,17 @@ def render_jwt_summary(token: str, *, key: str | None = None, verify: bool = Fal
             decode_kwargs["verify"] = True
         decoded = decode_jwt(token, **decode_kwargs)
     except JWTDecodeError as exc:
-        return f"❌ Failed to process token: {exc}"
+        return f"x Failed to process token: {exc}"
 
     status = "Signature: not verified"
     if decoded.signature_valid is True:
-        status = "Signature: ✅ valid"
+        status = "Signature: check valid"
     elif decoded.signature_valid is False:
-        status = "Signature: ❌ invalid"
+        status = "Signature: x invalid"
 
     warnings_block = ""
     if decoded.warnings:
-        warnings = "\n".join(f"• {message}" for message in decoded.warnings)
+        warnings = "\n".join(f"- {message}" for message in decoded.warnings)
         warnings_block = f"\nWarnings:\n{warnings}"
 
     parts: tuple[str, ...] = (

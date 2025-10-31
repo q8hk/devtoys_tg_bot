@@ -41,7 +41,9 @@ class I18nContext:
 class I18n:
     """Loads JSON catalogs and provides translation helpers."""
 
-    def __init__(self, locales_dir: Path, default_locale: str = "en") -> None:
+    def __init__(self, locales_dir: Path | None = None, default_locale: str = "en") -> None:
+        if locales_dir is None:
+            locales_dir = Path(__file__).resolve().parent / "locales"
         self._locales_dir = locales_dir
         self._default_locale = self._normalize_locale(default_locale)
         self._catalogs: dict[str, Mapping[str, Any]] = {}
@@ -60,25 +62,30 @@ class I18n:
 
         self._catalogs = {}
         if not self._locales_dir.exists():
-            raise CatalogNotFoundError(
-                f"Locales directory '{self._locales_dir}' does not exist"
+            logger.warning(
+                "Locales directory missing; falling back to default locale",
+                extra={"path": str(self._locales_dir)},
             )
+            self._catalogs[self._default_locale] = {}
+            return
+        loaded_any = False
         for path in sorted(self._locales_dir.glob("*.json")):
             locale = self._normalize_locale(path.stem)
             try:
                 with path.open("r", encoding="utf-8") as fp:
                     data = json.load(fp)
-            except json.JSONDecodeError as exc:
+            except json.JSONDecodeError as exc:  # pragma: no cover - defensive logging
                 raise I18nError(f"Failed to parse locale file '{path}'") from exc
             if not isinstance(data, Mapping):
-                raise I18nError(
-                    f"Catalog '{path}' must contain an object at the root"
-                )
+                raise I18nError(f"Catalog '{path}' must contain an object at the root")
             self._catalogs[locale] = data
-        if self._default_locale not in self._catalogs:
-            raise CatalogNotFoundError(
-                f"Default locale '{self._default_locale}' not found in {self._locales_dir}"
+            loaded_any = True
+        if not loaded_any:
+            logger.warning(
+                "No locale catalogs found; using empty default locale",
+                extra={"path": str(self._locales_dir)},
             )
+        self._catalogs.setdefault(self._default_locale, {})
 
     def available_locales(self) -> tuple[str, ...]:
         """Return the loaded locales."""
@@ -111,31 +118,41 @@ class I18n:
         Nested keys can be accessed with dot-notation (e.g. ``errors.general``).
         """
 
-        resolved_locale = self.resolve_locale(locale)
-        catalog = self._catalogs.get(resolved_locale)
-        if catalog is None:
-            raise CatalogNotFoundError(
-                f"Locale '{resolved_locale}' is not available. Loaded: {self.available_locales()}"
-            )
-        message = self._lookup(catalog, key)
-        if message is None and resolved_locale != self._default_locale:
-            fallback_catalog = self._catalogs[self._default_locale]
-            message = self._lookup(fallback_catalog, key)
-        if message is None:
-            if default is not None:
-                message = default
-            else:
-                logger.debug("Missing translation", extra={"key": key, "locale": resolved_locale})
-                message = key
+        value = self._resolve_value(key, locale=locale, default=default if default is not None else key)
+        if not isinstance(value, str):
+            value = str(value)
         if kwargs:
             try:
-                message = message.format(**kwargs)
+                value = value.format(**kwargs)
             except Exception:  # pragma: no cover - formatting errors are logged then bubbled
                 logger.exception(
                     "Failed to format translation",
-                    extra={"key": key, "locale": resolved_locale, "kwargs": kwargs},
+                    extra={"key": key, "locale": self.resolve_locale(locale), "kwargs": kwargs},
                 )
-        return message
+        return value
+
+    def translate(
+        self,
+        domain: str,
+        key: str,
+        *,
+        locale: str | None = None,
+        default: Any = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Translate ``domain.key`` returning raw objects when available."""
+
+        composite_key = f"{domain}.{key}" if domain else key
+        value = self._resolve_value(composite_key, locale=locale, default=default)
+        if isinstance(value, str) and kwargs:
+            try:
+                value = value.format(**kwargs)
+            except Exception:  # pragma: no cover - formatting errors are logged then bubbled
+                logger.exception(
+                    "Failed to format translation",
+                    extra={"key": composite_key, "locale": self.resolve_locale(locale), "kwargs": kwargs},
+                )
+        return value
 
     def get_context(self, locale: str | None) -> I18nContext:
         """Return a context helper bound to *locale*."""
@@ -148,8 +165,32 @@ class I18n:
         sanitized = locale.replace("_", "-").lower()
         return sanitized
 
+    def _resolve_value(
+        self,
+        key: str,
+        *,
+        locale: str | None,
+        default: Any,
+    ) -> Any:
+        resolved_locale = self.resolve_locale(locale)
+        catalog = self._catalogs.get(resolved_locale)
+        if catalog is None:
+            raise CatalogNotFoundError(
+                f"Locale '{resolved_locale}' is not available. Loaded: {self.available_locales()}"
+            )
+        value = self._lookup(catalog, key)
+        if value is None and resolved_locale != self._default_locale:
+            fallback_catalog = self._catalogs[self._default_locale]
+            value = self._lookup(fallback_catalog, key)
+        if value is None:
+            if default is not None:
+                return default
+            logger.debug("Missing translation", extra={"key": key, "locale": resolved_locale})
+            return default
+        return value
+
     @staticmethod
-    def _lookup(catalog: Mapping[str, Any], key: str) -> str | None:
+    def _lookup(catalog: Mapping[str, Any], key: str) -> Any:
         parts = key.split(".") if key else []
         current: Any = catalog
         for part in parts:
@@ -157,9 +198,7 @@ class I18n:
                 current = current[part]
             else:
                 return None
-        if isinstance(current, str):
-            return current
-        return None
+        return current
 
     def __contains__(self, locale: str) -> bool:
         return self._normalize_locale(locale) in self._catalogs

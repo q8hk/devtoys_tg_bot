@@ -15,6 +15,7 @@ from .config import AppConfig, load_settings
 from .middlewares import LocalizationMiddleware, LoggingMiddleware, RateLimitMiddleware
 from .persistence import PersistenceManager
 from .routers import all_routers
+from .storage import StorageManager
 
 
 def configure_logging(config: AppConfig) -> None:
@@ -84,11 +85,16 @@ async def main(config: AppConfig) -> None:
         token=config.bot.token,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
-    storage = StorageManager(settings.persist_dir)
+    storage = StorageManager(
+        config.persistence.root,
+        max_age=config.persistence.retention,
+        cleanup_interval=config.persistence.cleanup_interval,
+    )
     await storage.startup()
     dispatcher = Dispatcher()
     dispatcher["config"] = config
     dispatcher["persistence_manager"] = persistence_manager
+    dispatcher["storage_manager"] = storage
 
     register_middlewares(dispatcher, config, logger)
     register_routers(dispatcher)
@@ -110,6 +116,8 @@ async def main(config: AppConfig) -> None:
     finally:
         with suppress(Exception):
             await persistence_manager.shutdown()
+        with suppress(Exception):
+            await storage.shutdown()
         await bot.session.close()
 
 

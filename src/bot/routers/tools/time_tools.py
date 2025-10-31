@@ -12,7 +12,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from src.core.utils.time_ import (
+from core.utils.time_ import (
     convert_timezone,
     datetime_to_epoch,
     epoch_to_datetime,
@@ -97,7 +97,7 @@ async def handle_epoch_to_datetime(message: Message) -> None:
     await message.answer(
         "\n".join(
             [
-                "🕒 <b>Epoch to datetime</b>",
+                "clock <b>Epoch to datetime</b>",
                 f"Epoch: <code>{epoch}</code>",
                 f"Timezone: <code>{escape(tz)}</code>",
                 f"Result: <code>{converted.isoformat()}</code>",
@@ -129,7 +129,7 @@ async def handle_datetime_to_epoch(message: Message) -> None:
     await message.answer(
         "\n".join(
             [
-                "🕒 <b>Datetime to epoch</b>",
+                "clock <b>Datetime to epoch</b>",
                 f"Input: <code>{escape(expression)}</code>",
                 f"Timezone: <code>{escape(tz or dt_value.tzname() or 'UTC')}</code>",
                 f"Epoch: <code>{epoch:.6f}</code>",
@@ -161,7 +161,7 @@ async def handle_convert_time(message: Message) -> None:
     await message.answer(
         "\n".join(
             [
-                "🌍 <b>Timezone conversion</b>",
+                "globe <b>Timezone conversion</b>",
                 f"Input: <code>{escape(expression)}</code>",
                 f"From: <code>{escape(source_tz or dt_value.tzname() or 'UTC')}</code>",
                 f"To: <code>{escape(target_tz)}</code>",
@@ -193,7 +193,7 @@ async def handle_time_delta(message: Message) -> None:
     await message.answer(
         "\n".join(
             [
-                "⏱ <b>Parsed duration</b>",
+                "stopwatch <b>Parsed duration</b>",
                 f"Expression: <code>{escape(payload)}</code>",
                 f"Total seconds: <code>{parsed.seconds}</code>",
                 f"Normalized: <code>{_format_timedelta(parsed.value)}</code>",
@@ -220,3 +220,4 @@ def _parse_convert_payload(payload: str) -> tuple[str, str, Optional[str]]:
         raise ValueError("Target timezone cannot be empty.")
     source_tz = parts[2] if len(parts) > 2 and parts[2] else None
     return expression, target_tz, source_tz
+

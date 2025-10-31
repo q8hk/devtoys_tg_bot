@@ -58,7 +58,7 @@ def build_recent_keyboard(
 
     rows: list[list[InlineKeyboardButton]] = []
     for index, item in enumerate(recent_tasks, start=1):
-        text = shorten(item, width=46, placeholder="…")
+        text = shorten(item, width=46, placeholder="...")
         rows.append([
             InlineKeyboardButton(text=f"{index}. {text}", callback_data=f"recent:{index - 1}")
         ])
@@ -89,3 +89,5 @@ __all__ = [
     "build_recent_keyboard",
     "build_settings_keyboard",
 ]
+
+

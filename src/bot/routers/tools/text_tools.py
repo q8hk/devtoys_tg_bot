@@ -9,7 +9,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.filters.command import CommandObject
 from aiogram.types import Message
-from src.core.utils import text as text_utils
+from core.utils import text as text_utils
 
 __all__ = ["router"]
 
@@ -96,8 +96,8 @@ _TRANSFORMS: tuple[_SimpleTransform, ...] = (
 _HELP_MESSAGE = "\n".join(
     [
         "Available text tools:",
-        *[f"/{item.command} – {item.description}" for item in _TRANSFORMS],
-        "/lorem – Generate Lorem Ipsum text. Optionally pass `<words> [seed]`.",
+        *[f"/{item.command} - {item.description}" for item in _TRANSFORMS],
+        "/lorem - Generate Lorem Ipsum text. Optionally pass `<words> [seed]`.",
     ]
 )
 
@@ -154,3 +154,4 @@ async def handle_lorem(message: Message, command: CommandObject | None = None) -
     config = text_utils.LoremConfig(words=words or _DEFAULT_LOREM_WORDS, seed=seed)
     result = text_utils.generate_lorem_ipsum(config)
     await message.answer(result, parse_mode=None)
+

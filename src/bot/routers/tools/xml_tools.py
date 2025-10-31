@@ -8,7 +8,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from src.core.utils.xml_ import json_to_xml, minify_xml, pretty_xml, xml_to_json, xpath_query
+from core.utils.xml_ import json_to_xml, minify_xml, pretty_xml, xml_to_json, xpath_query
 
 router = Router(name="xml_tools")
 
@@ -134,3 +134,4 @@ async def handle_xpath(message: Message) -> None:
         return
 
     await message.answer(_wrap_block("\n\n".join(matches), "xml"))
+

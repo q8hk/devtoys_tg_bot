@@ -6,7 +6,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from src.core.utils import hash_
+from core.utils import hash_
 
 router = Router(name="hash_tools")
 
@@ -84,3 +84,4 @@ async def handle_hmac_command(message: Message) -> None:
 
 
 __all__ = ["router"]
+

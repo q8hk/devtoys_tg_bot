@@ -6,7 +6,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import BufferedInputFile, Message
 
-from src.core.utils import color_
+from core.utils import color_
 
 router = Router(name="color-tools")
 
@@ -23,9 +23,9 @@ def build_color_summary(hex_color: str) -> tuple[str, list[str], bytes]:
     palette = color_.generate_palette(base_hex=normalized_hex, count=5)
     swatch = color_.create_palette_swatch(palette)
     summary_lines = [
-        f"🎨 {normalized_hex}",
+        f"palette {normalized_hex}",
         f"RGB: {rgb[0]}, {rgb[1]}, {rgb[2]}",
-        f"HSL: {hsl[0]}°, {hsl[1]}%, {hsl[2]}%",
+        f"HSL: {hsl[0]}deg, {hsl[1]}%, {hsl[2]}%",
         f"CMYK: {cmyk[0]}%, {cmyk[1]}%, {cmyk[2]}%, {cmyk[3]}%",
         (
             "Contrast vs white: "
@@ -53,9 +53,10 @@ async def handle_color_lookup(message: Message) -> None:
     try:
         summary, palette, swatch = build_color_summary(candidate)
     except ValueError as exc:
-        await message.answer(f"⚠️ {exc}")
+        await message.answer(f"!  {exc}")
         return
     await message.answer(summary)
     file = BufferedInputFile(swatch, filename="palette.png")
     caption = "Palette preview: " + ", ".join(palette)
     await message.answer_document(file, caption=caption)
+

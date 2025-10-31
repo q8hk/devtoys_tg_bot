@@ -273,7 +273,7 @@ async def handle_ping(message: Message) -> None:
     """Respond to ping health checks."""
 
     if not _is_authorized(message):
-        await message.answer("🚫 Access denied.")
+        await message.answer("no Access denied.")
         return
 
     now = datetime.now(tz=UTC)
@@ -286,7 +286,7 @@ async def handle_admin_dashboard(message: Message) -> None:
     """Send a formatted admin dashboard overview."""
 
     if not _is_authorized(message):
-        await message.answer("🚫 Access denied.")
+        await message.answer("no Access denied.")
         return
 
     bot = message.bot
@@ -335,11 +335,11 @@ def _render_dashboard(snapshot: AdminMetricsSnapshot) -> str:
 
     storage = snapshot.storage
     storage_lines = ["<b>Storage</b>"]
-    storage_lines.append(f"• Users: <b>{storage.total_users}</b>")
-    storage_lines.append(f"• Jobs: <b>{storage.total_jobs}</b>")
-    storage_lines.append(f"• Size: <b>{_format_bytes(storage.total_size_bytes)}</b>")
+    storage_lines.append(f"- Users: <b>{storage.total_users}</b>")
+    storage_lines.append(f"- Jobs: <b>{storage.total_jobs}</b>")
+    storage_lines.append(f"- Size: <b>{_format_bytes(storage.total_size_bytes)}</b>")
     if storage.last_job_at is not None:
-        storage_lines.append(f"• Last job: <code>{storage.last_job_at.isoformat()}</code>")
+        storage_lines.append(f"- Last job: <code>{storage.last_job_at.isoformat()}</code>")
     sections.append("\n".join(storage_lines))
 
     chart = _render_usage_chart(storage.daily_activity)
@@ -347,24 +347,24 @@ def _render_dashboard(snapshot: AdminMetricsSnapshot) -> str:
 
     rate = snapshot.rate_limiter
     rate_lines = ["<b>Rate limiter</b>"]
-    rate_lines.append(f"• Backend: <b>{html.escape(rate.backend)}</b>")
-    rate_lines.append(f"• Active keys: <b>{rate.active_keys}</b>")
-    rate_lines.append(f"• Total requests: <b>{rate.total_requests}</b>")
-    rate_lines.append(f"• Throttled: <b>{rate.throttled_requests}</b>")
+    rate_lines.append(f"- Backend: <b>{html.escape(rate.backend)}</b>")
+    rate_lines.append(f"- Active keys: <b>{rate.active_keys}</b>")
+    rate_lines.append(f"- Total requests: <b>{rate.total_requests}</b>")
+    rate_lines.append(f"- Throttled: <b>{rate.throttled_requests}</b>")
     if rate.detail:
-        rate_lines.append(f"• Detail: <code>{html.escape(rate.detail)}</code>")
+        rate_lines.append(f"- Detail: <code>{html.escape(rate.detail)}</code>")
     sections.append("\n".join(rate_lines))
 
     queue = snapshot.queue
     queue_lines = ["<b>Job queue</b>"]
-    queue_lines.append(f"• Backend: <b>{html.escape(queue.backend)}</b>")
-    queue_lines.append(f"• Pending: <b>{queue.pending_jobs}</b>")
-    queue_lines.append(f"• In progress: <b>{queue.in_progress_jobs}</b>")
-    queue_lines.append(f"• Completed (1h): <b>{queue.completed_last_hour}</b>")
+    queue_lines.append(f"- Backend: <b>{html.escape(queue.backend)}</b>")
+    queue_lines.append(f"- Pending: <b>{queue.pending_jobs}</b>")
+    queue_lines.append(f"- In progress: <b>{queue.in_progress_jobs}</b>")
+    queue_lines.append(f"- Completed (1h): <b>{queue.completed_last_hour}</b>")
     if queue.workers is not None:
-        queue_lines.append(f"• Workers: <b>{queue.workers}</b>")
+        queue_lines.append(f"- Workers: <b>{queue.workers}</b>")
     if queue.detail:
-        queue_lines.append(f"• Detail: <code>{html.escape(queue.detail)}</code>")
+        queue_lines.append(f"- Detail: <code>{html.escape(queue.detail)}</code>")
     sections.append("\n".join(queue_lines))
 
     sections.append("<b>Prometheus</b>\n<pre>" + _render_prometheus_metrics(snapshot) + "</pre>")
@@ -383,7 +383,7 @@ def _render_usage_chart(activity: Mapping[str, int]) -> str:
     for day, value in activity.items():
         if value:
             scaled = max(1, math.ceil((value / max_value) * bar_width))
-            bar = "█" * scaled
+            bar = "#" * scaled
         else:
             bar = ""
         lines.append(f"{day} {bar} {value}")

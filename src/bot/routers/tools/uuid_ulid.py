@@ -21,7 +21,7 @@ router = Router(name="tools.uuid_ulid")
 
 def _format_uuid_info(info: UUIDInfo) -> str:
     if not info.is_valid or info.value is None:
-        return "❌ Invalid UUID provided."
+        return "x Invalid UUID provided."
 
     parts = [
         "<b>UUID</b>:\n<code>{}</code>".format(info.value),
@@ -30,13 +30,13 @@ def _format_uuid_info(info: UUIDInfo) -> str:
     if info.timestamp is not None:
         parts.append(f"<b>Timestamp:</b> {info.timestamp.isoformat()}")
     else:
-        parts.append("<b>Timestamp:</b> —")
+        parts.append("<b>Timestamp:</b> -")
     return "\n".join(parts)
 
 
 def _format_ulid_info(info: ULIDInfo) -> str:
     if not info.is_valid or info.value is None:
-        return "❌ Invalid ULID provided."
+        return "x Invalid ULID provided."
 
     parts = [
         "<b>ULID</b>:\n<code>{}</code>".format(info.value),
@@ -44,7 +44,7 @@ def _format_ulid_info(info: ULIDInfo) -> str:
     if info.timestamp is not None:
         parts.append(f"<b>Timestamp:</b> {info.timestamp.isoformat()}")
     else:
-        parts.append("<b>Timestamp:</b> —")
+        parts.append("<b>Timestamp:</b> -")
     return "\n".join(parts)
 
 
@@ -59,13 +59,13 @@ async def handle_generate_uuid(message: Message, command: CommandObject) -> None
             try:
                 version = int(arg.split()[0])
             except ValueError:
-                await message.answer("❌ Version must be one of 1, 4, or 7.")
+                await message.answer("x Version must be one of 1, 4, or 7.")
                 return
 
     try:
         identifier = generate_uuid(version)
     except ValueError:
-        await message.answer("❌ Unsupported UUID version. Use 1, 4, or 7.")
+        await message.answer("x Unsupported UUID version. Use 1, 4, or 7.")
         return
 
     info = inspect_uuid(str(identifier))
@@ -77,7 +77,7 @@ async def handle_inspect_uuid(message: Message, command: CommandObject) -> None:
     """Inspect an incoming UUID string."""
 
     if not command.args:
-        await message.answer("❌ Provide a UUID after the command.")
+        await message.answer("x Provide a UUID after the command.")
         return
 
     info = inspect_uuid(command.args.strip())
@@ -98,7 +98,7 @@ async def handle_inspect_ulid(message: Message, command: CommandObject) -> None:
     """Inspect an incoming ULID string."""
 
     if not command.args:
-        await message.answer("❌ Provide a ULID after the command.")
+        await message.answer("x Provide a ULID after the command.")
         return
 
     info = inspect_ulid(command.args.strip())

@@ -8,7 +8,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from ....core.utils.code_ import (
+from core.utils.code_ import (
     format_css,
     format_js,
     format_json,
@@ -41,7 +41,7 @@ async def _transform_text(
     try:
         result = transformer(payload)
     except ValueError as exc:
-        await message.answer(f"❌ {exc}")
+        await message.answer(f"x {exc}")
         return
 
     await message.answer(result or "Result is empty.")
@@ -113,7 +113,7 @@ async def cmd_code_diff(message: Message) -> None:
     try:
         original, updated = _parse_diff_payload(payload)
     except ValueError as exc:
-        await message.answer(f"❌ {exc}")
+        await message.answer(f"x {exc}")
         return
 
     diff = text_diff(original, updated)
@@ -149,7 +149,7 @@ async def cmd_code_password(message: Message) -> None:
             try:
                 length = int(token.split("=", 1)[1])
             except ValueError:
-                await message.answer("❌ length must be an integer")
+                await message.answer("x length must be an integer")
                 return
         elif token.startswith("digits="):
             use_digits = _parse_boolean(token.split("=", 1)[1], default=True)
@@ -159,7 +159,7 @@ async def cmd_code_password(message: Message) -> None:
     try:
         password = generate_password(length=length, use_digits=use_digits, use_symbols=use_symbols)
     except ValueError as exc:
-        await message.answer(f"❌ {exc}")
+        await message.answer(f"x {exc}")
         return
 
     await message.answer(password)
@@ -184,7 +184,7 @@ async def cmd_code_token(message: Message) -> None:
             try:
                 length = int(token.split("=", 1)[1])
             except ValueError:
-                await message.answer("❌ length must be an integer")
+                await message.answer("x length must be an integer")
                 return
         elif token.startswith("alphabet="):
             alphabet = token.split("=", 1)[1]
@@ -192,7 +192,8 @@ async def cmd_code_token(message: Message) -> None:
     try:
         token_value = generate_token(length=length, alphabet=alphabet)
     except ValueError as exc:
-        await message.answer(f"❌ {exc}")
+        await message.answer(f"x {exc}")
         return
 
     await message.answer(token_value)
+

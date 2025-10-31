@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from os import PathLike
 from typing import BinaryIO, TextIO
 
-from src.core.utils import base64_
+from core.utils import base64_
 
 __all__ = ["Base64CodecService"]
 
@@ -113,3 +113,4 @@ class Base64CodecService:
         """Expose the utility detector for convenience."""
 
         return base64_.detect_data_uri(value)
+

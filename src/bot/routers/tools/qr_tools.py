@@ -6,7 +6,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import BufferedInputFile, Message
 
-from src.core.utils.qr_ import create_qr_png, create_wifi_qr_png
+from core.utils.qr_ import create_qr_png, create_wifi_qr_png
 
 __all__ = ["router"]
 
@@ -67,3 +67,4 @@ async def handle_wifi_qr_command(message: Message) -> None:
         BufferedInputFile(png_bytes, filename="wifi-qr.png"),
         caption="Share this QR to let others join your Wi-Fi network.",
     )
+

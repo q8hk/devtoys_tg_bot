@@ -9,7 +9,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from src.core.utils import html_ as html_utils
+from core.utils import html_ as html_utils
 
 router = Router(name="html_tools")
 
@@ -102,3 +102,4 @@ async def handle_html_strip(message: Message) -> None:
         return
     result = html_utils.strip_tags(payload)
     await _reply_with_block(message, "HTML Tags Removed", result)
+

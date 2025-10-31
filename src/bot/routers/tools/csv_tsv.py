@@ -11,7 +11,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import BufferedInputFile, Message
 
-from ....core.utils.csv_tsv import (
+from core.utils.csv_tsv import (
     convert_delimiter,
     csv_to_tsv,
     table_stats,
@@ -60,7 +60,7 @@ async def _send_large_response(message: Message, content: str, filename: str) ->
 async def _handle_error(message: Message, exc: Exception) -> None:
     logger.exception("CSV/TSV processing failed", exc_info=exc)
     await message.answer(
-        "⚠️ Unable to process the provided data. Please verify the format and try again."
+        "!  Unable to process the provided data. Please verify the format and try again."
     )
 
 
@@ -171,3 +171,4 @@ async def handle_reformat(message: Message) -> None:
         await _handle_error(message, exc)
         return
     await _send_large_response(message, reformatted, "reformatted.csv")
+
