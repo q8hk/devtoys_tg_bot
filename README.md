@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.png" alt="DevToys Telegram Bot Banner" width="100%" />
+</p>
+
 # DevToys Telegram Bot
 
 Self-hostable Telegram bot inspired by [DevToys](https://github.com/veler/DevToys). The bot delivers a curated set of developer utilities (formatters, encoders, converters, generators) through a friendly conversational UX, designed for private teams and personal productivity.
