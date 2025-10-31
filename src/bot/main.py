@@ -10,6 +10,8 @@ from aiogram.enums import ParseMode
 from aiogram.client.bot import DefaultBotProperties
 
 from .config import load_settings
+from .routers.tools import attach_tool_context
+from .storage import StorageManager
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +31,19 @@ async def main() -> None:
         token=settings.bot_token,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
+    storage = StorageManager(settings.persist_dir)
+    await storage.startup()
     dispatcher = Dispatcher()
-    # TODO: Wire middlewares, routers, background tasks, and storage.
-    logger.info("Bot initialized", extra={"admins": settings.admins})
+    attach_tool_context(dispatcher, storage)
+    # TODO: Wire middlewares and routers.
+    logger.info(
+        "Bot initialized",
+        extra={"admins": settings.admins, "persist_dir": str(settings.persist_dir)},
+    )
     try:
         await dispatcher.start_polling(bot)
     finally:
+        await storage.shutdown()
         await bot.session.close()
 
 
