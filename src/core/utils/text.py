@@ -7,19 +7,23 @@ logic easy to test without having to go through aiogram handlers.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from random import Random
 from textwrap import dedent as _dedent
 from textwrap import indent as _indent
-from typing import Iterable
 
 __all__ = [
     "trim",
     "indent",
     "dedent",
     "normalize_whitespace",
+    "ltrim",
+    "rtrim",
     "to_upper",
     "to_lower",
+    "to_title",
+    "to_sentence",
     "slugify",
     "sort_lines",
     "unique_lines",
@@ -31,9 +35,21 @@ __all__ = [
 
 
 def trim(value: str) -> str:
-    """Return ``value`` with leading and trailing whitespace stripped."""
+    """Return ``value`` with leading and trailing whitespace removed."""
 
     return value.strip()
+
+
+def ltrim(value: str) -> str:
+    """Return ``value`` without the leading whitespace."""
+
+    return value.lstrip()
+
+
+def rtrim(value: str) -> str:
+    """Return ``value`` without the trailing whitespace."""
+
+    return value.rstrip()
 
 
 def indent(value: str, prefix: str = "    ", indent_empty: bool = False) -> str:
@@ -44,7 +60,7 @@ def indent(value: str, prefix: str = "    ", indent_empty: bool = False) -> str:
     """
 
     if indent_empty:
-        return _indent(value, prefix)
+        return _indent(value, prefix, lambda _line: True)
     return _indent(value, prefix, lambda line: bool(line.strip()))
 
 
@@ -55,9 +71,11 @@ def dedent(value: str) -> str:
 
 
 def normalize_whitespace(value: str) -> str:
-    """Collapse consecutive whitespace to a single space.
+    """Collapse consecutive whitespace characters into a single space.
 
-    Newlines are treated as separators and the resulting text is stripped.
+    All kinds of whitespace (tabs, newlines, carriage returns) are treated as
+    separators and the final result is stripped.  This mirrors the behaviour of
+    many "minify" style helpers.
     """
 
     return " ".join(value.split())
@@ -73,6 +91,20 @@ def to_lower(value: str) -> str:
     """Return a lower-case representation of ``value``."""
 
     return value.lower()
+
+
+def to_title(value: str) -> str:
+    """Return ``value`` converted to title case."""
+
+    return value.title()
+
+
+def to_sentence(value: str) -> str:
+    """Return ``value`` converted to sentence case."""
+
+    if not value:
+        return ""
+    return value.capitalize()
 
 
 def slugify(value: str, *, separator: str = "-") -> str:
@@ -102,28 +134,62 @@ def slugify(value: str, *, separator: str = "-") -> str:
     return slug or separator
 
 
-def _split_lines(value: str) -> list[str]:
-    return value.splitlines()
+def _normalize_newlines(value: str) -> str:
+    """Return ``value`` with Windows and old Mac newlines normalised."""
+
+    return value.replace("\r\n", "\n").replace("\r", "\n")
 
 
-def sort_lines(value: str, *, reverse: bool = False, case_sensitive: bool = False) -> str:
+def _split_lines(value: str) -> tuple[list[str], int]:
+    """Split ``value`` into lines while tracking trailing newlines.
+
+    The helper normalises newline characters to ``\n`` and returns the list of
+    logical lines along with the number of trailing newline characters that need
+    to be re-attached once a transformation has been applied.
+    """
+
+    normalized = _normalize_newlines(value)
+    if not normalized:
+        return [], 0
+    trailing_newlines = len(normalized) - len(normalized.rstrip("\n"))
+    core = normalized[: len(normalized) - trailing_newlines] if trailing_newlines else normalized
+    if core:
+        lines = core.split("\n")
+    else:
+        lines = []
+    return lines, trailing_newlines
+
+
+def sort_lines(
+    value: str,
+    *,
+    reverse: bool = False,
+    case_sensitive: bool = False,
+) -> str:
     """Return a string whose lines are sorted.
 
     Empty trailing lines are preserved to avoid surprise formatting changes.
     """
 
-    lines = _split_lines(value)
+    lines, trailing_newlines = _split_lines(value)
+    if not lines:
+        return "\n" * trailing_newlines
     if not case_sensitive:
         lines.sort(key=lambda item: item.lower(), reverse=reverse)
     else:
         lines.sort(reverse=reverse)
-    return "\n".join(lines)
+    result = "\n".join(lines)
+    if trailing_newlines:
+        result += "\n" * trailing_newlines
+    return result
 
 
 def unique_lines(value: str, *, preserve_order: bool = True) -> str:
     """Return ``value`` with duplicate lines removed."""
 
-    lines = _split_lines(value)
+    lines, trailing_newlines = _split_lines(value)
+    if not lines:
+        return "\n" * trailing_newlines
     if preserve_order:
         seen: set[str] = set()
         unique: list[str] = []
@@ -131,21 +197,37 @@ def unique_lines(value: str, *, preserve_order: bool = True) -> str:
             if line not in seen:
                 seen.add(line)
                 unique.append(line)
-        result = unique
+        result_lines = unique
     else:
-        result = sorted(set(lines))
-    return "\n".join(result)
+        result_lines = sorted(set(lines))
+    result = "\n".join(result_lines)
+    if trailing_newlines:
+        result += "\n" * trailing_newlines
+    return result
 
 
-def add_line_numbers(value: str, *, start: int = 1, padding: int = 3, separator: str = " ") -> str:
+def add_line_numbers(
+    value: str,
+    *,
+    start: int = 1,
+    padding: int = 3,
+    separator: str = " ",
+) -> str:
     """Prefix lines with increasing numbers.
 
     ``padding`` controls the zero padding applied to the counter so the columns
     stay aligned.
     """
 
-    lines = _split_lines(value)
-    formatted = [f"{index:0{padding}d}{separator}{line}" for index, line in enumerate(lines, start=start)]
+    normalized = _normalize_newlines(value)
+    if not normalized:
+        return ""
+
+    lines = normalized.split("\n")
+    formatted = [
+        f"{index:0{padding}d}{separator}{line}"
+        for index, line in enumerate(lines, start=start)
+    ]
     return "\n".join(formatted)
 
 
@@ -156,14 +238,18 @@ def strip_line_numbers(value: str, *, separator: str = " ") -> str:
     is.
     """
 
+    lines, trailing_newlines = _split_lines(value)
     stripped: list[str] = []
-    for line in _split_lines(value):
+    for line in lines:
         parts = line.split(separator, 1)
         if len(parts) == 2 and parts[0].strip().isdigit():
             stripped.append(parts[1])
         else:
             stripped.append(line)
-    return "\n".join(stripped)
+    result = "\n".join(stripped)
+    if trailing_newlines:
+        result += "\n" * trailing_newlines
+    return result
 
 
 @dataclass(slots=True)
